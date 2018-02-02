@@ -5,6 +5,7 @@
 #include <boost/thread.hpp>
 #include <memory>
 #include <stdio.h>
+#include "WaitGroup.h"
 
 using namespace std;
 using namespace boost::gregorian;
@@ -20,10 +21,10 @@ int main()
 
     sql::ConnectOptionsMap connection_properties;
 
-    connection_properties["hostName"] = "127.0.0.1";
-    connection_properties["userName"] = "root";
-    connection_properties["password"] = "root";
-    connection_properties["schema"] = "test";
+    connection_properties["hostName"] = "10.3.247.59";
+    connection_properties["userName"] = "web";
+    connection_properties["password"] = "web123!@#";
+    connection_properties["schema"] = "db15";
     connection_properties["port"] = 3306;
     connection_properties["OPT_RECONNECT"] = true;
     connection_properties["maxOpen"] = 10;
@@ -33,51 +34,48 @@ int main()
     db->Open(connection_properties);
 
     boost::thread_group tg;
-    auto pre = boost::posix_time::microsec_clock::local_time();
-    cout << pre << endl;
-    co_chan<int> ch;
-    go [=]{
+
+    WaitGroup wg;
+    go[=]
+    {
         auto pre = boost::posix_time::microsec_clock::local_time();
-        int t = 20;
-        while(t!= 0){
-            int tmp;
-            ch >>  tmp;
-            --t;
-        }
+
+        wg.Wait();
         auto now = boost::posix_time::microsec_clock::local_time();
         cout << now << endl;
         cout << now - pre << endl;
-       // db->Close();
-        
-
+        // db->Close();
     };
     for (int i = 0; i < 20; ++i) {
-        go [=]{
+        wg.Add();
+        go[&]
+        {
             cout << "run here" << endl;
             for (int i = 0; i < 1000; i++) {
-                if(i == 500){
+                if (i == 500) {
                     //db->Close();
                 }
-                auto result = db->executeQuery("select * from activity");
-                if(result==nullptr){
-                   // cout << "null " << endl;
+                auto dcResult = db->GetConn();
+                auto stmtResult = get<0>(dcResult)->prepareStatement("select * from user where uuid = ?");
+                get<0>(stmtResult)->setInt(1, 1);
+                auto tup = get<0>(stmtResult)->executeQuery();
+                auto result = get<0>(tup);
+                if (result == nullptr) {
+                    // cout << "null " << endl;
                     continue;
                 }
-                while(result->next()){
-                    //cout << result->getString("id") << endl;
+                while (result->next()) {
+                    cout << result->getString("uuid") << endl;
                 }
                 //cout << "complelte" <<endl;
             }
-            cout << "coroutine end: " << i <<endl;
-            ch << 1;};
+            wg.Done();
+        };
     }
     //boost::thread_group tg;
     for (int i = 0; i < 3; ++i)
-        tg.create_thread([]{ co_sched.RunUntilNoTask(); });
+        tg.create_thread([] { co_sched.RunUntilNoTask(); });
     co_sched.RunUntilNoTask();
-    auto now = boost::posix_time::microsec_clock::local_time();
-    cout << now << endl;
-    cout << now - pre << endl;
 
     /*
     for (int i = 0; i < 100; ++i)
@@ -95,7 +93,7 @@ int main()
                
             } });
             */
-    
+
     //co_sched.RunUntilNoTask();
 
     return 0;
