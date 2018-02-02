@@ -18,3 +18,5 @@ install:
     - git clone https://github.com/yyzybb537/libgo.git /tmp/libgo
     - cd /tmp/libgo && mkdir build && cd build && cmake .. && sudo make install
 
+script:
+    - g++ sql.cpp main.cpp -I/usr/local/include/libgo -std=c++11 -llibgo -lmysqlcppconn -lboost_thread -lboost_system -g -ggdb

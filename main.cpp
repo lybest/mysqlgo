@@ -21,14 +21,7 @@ int main()
 
     sql::ConnectOptionsMap connection_properties;
 
-    connection_properties["hostName"] = "10.3.247.59";
-    connection_properties["userName"] = "web";
-    connection_properties["password"] = "web123!@#";
-    connection_properties["schema"] = "db15";
-    connection_properties["port"] = 3306;
-    connection_properties["OPT_RECONNECT"] = true;
-    connection_properties["maxOpen"] = 10;
-    connection_properties["maxIdle"] = 3;
+   
 
     std::shared_ptr<DB> db(new DB());
     db->Open(connection_properties);
